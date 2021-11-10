@@ -1,0 +1,35 @@
+name: Build Solr for CKAN
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: solr
+  SOLR_VERSION: 6.6.6
+  CKAN_VERSION: 2.9.4
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build docker image
+        run: docker build -t ${IMAGE_NAME} .
+
+      - name: Login to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: :
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          IMAGE_TAG=${SOLR_VERSION}-ckan-${CKAN_VERSION}
+          docker tag ${IMAGE_NAME} ${IMAGE_ID}:${IMAGE_TAG}
+          docker push ${IMAGE_ID}:${IMAGE_TAG}
